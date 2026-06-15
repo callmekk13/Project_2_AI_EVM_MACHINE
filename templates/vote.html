@@ -1,65 +1,62 @@
-<!DOCTYPE html>
-<html>
 {% load static %}
 
-<head>
-    <title>VOTING</title>
-    <style type="text/css">
-        table,
-        h3 {
-            text-align: center;
-        }
-        
-        .center {
-            margin-left: auto;
-            margin-right: auto;
-            padding: 5px;
-        }
-        
-        td,
-        th {
-            margin-top: auto;
-            margin-bottom: auto;
-            text-align: left;
-            padding: 10px;
-        }
-        
-        .candidate:hover {
-            border: 1px solid blue;
-        }
-        
-        .candidate-select {
-            border: 1px solid blue;
-        }
-        /* input[type="radio"] {
-            display: none;
-        } */
-        
-        body {
-            background-color: #F5F5DC;
-        }
-    </style>
-</head>
+<div class="ballot-container">
+    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+        Identify the candidate of your choice and tap their row or select the radio button. Tap "CAST BALLOT VOTE" to finalize.
+    </p>
 
-<body>
-    <form method="post">
+    <form method="post" id="ballot-form">
         {% csrf_token %}
-        <table class="center">
-            <th></th>
-            <th>Name</th>
-            <th>Icon</th>
-            {% for party in pts %}
-            <tr class="candidate">
-                <td><input type="radio" name="voted_to" id="{{ party.name }}" value="{{ party.name }}"></td>
-                <td><label for="{{ party.name }}">{{ party.full_name }}</label></td>
-                <td><label for="{{ party.name }}"><img src="{% static 'img/' %}{{party.name|lower}}.png" height="50" width="70"></label></td>
-            </tr>
-            {% endfor %}
+        <table class="ballot-table">
+            <thead>
+                <tr style="text-align: left; color: var(--text-secondary); font-size: 13px; text-transform: uppercase;">
+                    <th style="padding: 10px 15px; width: 60px;">Select</th>
+                    <th style="padding: 10px 15px;">Candidate / Party Info</th>
+                    <th style="padding: 10px 15px; text-align: right; width: 100px;">Symbol</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for party in pts %}
+                <tr class="ballot-row" onclick="selectBallotRow(this, '{{ party.name }}')">
+                    <td style="text-align: center;">
+                        <span class="custom-radio" id="radio-indicator-{{ party.name }}"></span>
+                        <input type="radio" name="voted_to" id="input-{{ party.name }}" value="{{ party.name }}" style="display: none;">
+                    </td>
+                    <td>
+                        <span class="party-name">{{ party.full_name }}</span>
+                        <span class="party-tag">{{ party.name }}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <img class="party-logo" src="{% static 'img/' %}{{ party.name|lower }}.png" alt="{{ party.name }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
 
-        <input id="btn" type="submit" value="VOTE">
-
+        <button type="submit" class="btn-vote-submit">🚨 CAST SECURE VOTE</button>
     </form>
-</body>
+</div>
 
-</html>
+<script>
+    function selectBallotRow(rowElement, partyKey) {
+        // Unselect all rows
+        document.querySelectorAll('.ballot-row').forEach(row => {
+            row.classList.remove('selected');
+        });
+        
+        // Uncheck all radios
+        document.querySelectorAll('input[name="voted_to"]').forEach(radio => {
+            radio.checked = false;
+        });
+
+        // Select the clicked row
+        rowElement.classList.add('selected');
+        
+        // Check the radio input inside the row
+        const radioInput = document.getElementById('input-' + partyKey);
+        if (radioInput) {
+            radioInput.checked = true;
+        }
+    }
+</script>

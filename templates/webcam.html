@@ -1,56 +1,128 @@
-<!DOCTYPE html>
-<html>
 {% load static %}
 
-<head>
-    <title>Webcam Stream</title>
-    <style type="text/css">
-        .video-wrap {
-            padding: 24px 12px;
-            margin: 2px;
-            width: 720px;
-            height: 520px;
-        }
+<div style="display: flex; flex-direction: column; height: 100%;">
+    {% if stream %}
+        <!-- Camera Stream Block -->
+        <h3 style="margin-top: 0; color: var(--accent-blue); display: flex; justify-content: space-between; align-items: center;">
+            <span>📸 CAMERA SENSOR FEED</span>
+            <span style="font-size: 12px; background: rgba(59, 130, 246, 0.2); padding: 4px 10px; border-radius: 20px;">
+                🔴 LIVE
+            </span>
+        </h3>
         
-        #video {
-            width: 720px;
-            height: 520px;
-            background-color: #666;
-        }
-        
-        body {
-            padding-left: 50px;
-            text-align: center;
-            background-color: #F5F5DC;
-        }
-        
-        #btn {
-            float: right;
-            margin: 24px 0;
-            width: 20%;
-            font-size: 26px;
-            background-color: green;
-            border: 1px solid;
-            color: #fff
-        }
-    </style>
-</head>
+        <div class="video-container">
+            <img id="video" class="video-frame" src="{% url stream %}" alt="Webcam Stream">
+        </div>
 
-<body>
-    <div class="video-wrap">
-        {% if stream %}
-        <img id="video" src="{% url stream %}">
-        <form method="post">
+        <form method="post" style="margin-top: 20px; display: flex; justify-content: flex-end;">
             {% csrf_token %}
-            <input id="btn" type="submit" value="Next">
+            <button id="btn" class="btn-primary" type="submit">Verify & Proceed &rarr;</button>
         </form>
-        {% else %}
 
-        <h3>Voting phase</h3>
-        {% include 'vote.html' %} {% endif %}
+        <!-- Simulator Configuration Widget (Visible in Sandbox/Fallback mode) -->
+        {% if camera_failed %}
+        <div class="simulator-panel">
+            <div class="simulator-title">
+                <span>🛠️</span> WEBCAM SIMULATION CONTROLS
+            </div>
+            
+            <div class="sim-control-grid">
+                <!-- Phase 1: Person Detection -->
+                {% if phase.key == 'phase_1' %}
+                <div class="sim-card" style="grid-column: 1 / -1;">
+                    <span class="sim-label">Booth Occupancy (Phase 1)</span>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <form action="{% url 'set_sim_state' %}" method="post" class="sim-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="sim_persons" value="1">
+                            <button type="submit" class="btn-option {% if sim_persons == 1 %}active{% endif %}">
+                                👥 1 Person (Valid State)
+                            </button>
+                        </form>
+                        <form action="{% url 'set_sim_state' %}" method="post" class="sim-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="sim_persons" value="2">
+                            <button type="submit" class="btn-option {% if sim_persons == 2 %}active{% endif %}">
+                                👥👥 2 Persons (Violation)
+                            </button>
+                        </form>
+                        <form action="{% url 'set_sim_state' %}" method="post" class="sim-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="sim_persons" value="0">
+                            <button type="submit" class="btn-option {% if sim_persons == 0 %}active{% endif %}">
+                                ❌ 0 Persons (Empty Booth)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
 
+                <!-- Phase 2: Mask Detection -->
+                {% if phase.key == 'phase_2' %}
+                <div class="sim-card" style="grid-column: 1 / -1;">
+                    <span class="sim-label">Face Mask Status (Phase 2)</span>
+                    <div style="display: flex; gap: 10px;">
+                        <form action="{% url 'set_sim_state' %}" method="post" class="sim-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="sim_has_mask" value="false">
+                            <button type="submit" class="btn-option {% if not sim_has_mask %}active{% endif %}">
+                                🟢 No Mask (Identity Readable)
+                            </button>
+                        </form>
+                        <form action="{% url 'set_sim_state' %}" method="post" class="sim-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="sim_has_mask" value="true">
+                            <button type="submit" class="btn-option {% if sim_has_mask %}active{% endif %}">
+                                🔴 Wearing Mask (Blocked)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
 
-    </div>
-</body>
+                <!-- Phase 3: Face Recognition -->
+                {% if phase.key == 'phase_3' %}
+                <div class="sim-card" style="grid-column: 1 / -1;">
+                    <span class="sim-label">Voter Identification (Phase 3)</span>
+                    <form action="{% url 'set_sim_state' %}" method="post" id="face_sim_form">
+                        {% csrf_token %}
+                        <select name="sim_face_name" class="sim-select" onchange="document.getElementById('face_sim_form').submit()" style="padding: 10px; font-size: 14px;">
+                            <option value="" disabled>--- Select a voter to simulate ---</option>
+                            {% for name in voter_names %}
+                            <option value="{{ name }}" {% if sim_face_name == name %}selected{% endif %}>
+                                👤 {{ name }} (Registered Voter)
+                            </option>
+                            {% endfor %}
+                            <option value="Unknown" {% if sim_face_name == 'Unknown' %}selected{% endif %}>
+                                ❓ Unknown / Unregistered Identity
+                            </option>
+                        </select>
+                    </form>
+                </div>
+                {% endif %}
 
-</html>
+                <!-- DB Management controls -->
+                <div class="sim-card" style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.15); margin-top: 15px;">
+                    <div style="text-align: left;">
+                        <span class="sim-label" style="color: var(--accent-red); margin-bottom: 2px;">Database Sandboxing</span>
+                        <span style="font-size: 11px; color: var(--text-secondary);">Clear existing vote records to re-test voters who have already voted.</span>
+                    </div>
+                    <form action="{% url 'clear_votes' %}" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-option" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171; font-weight: 600; padding: 8px 16px;">
+                            🗑️ Clear Vote Database
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- Voting Ballot Stream Block -->
+        <h3 style="margin-top: 0; color: var(--accent-purple); display: flex; align-items: center; gap: 8px;">
+            <span>🗳️ SECURE BALLOT BOX</span>
+        </h3>
+        {% include 'vote.html' %}
+    {% endif %}
+</div>

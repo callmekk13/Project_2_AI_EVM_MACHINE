@@ -4,7 +4,7 @@ from .camera import VideoCamera, gen
 
 def recognize_face(request):
     return StreamingHttpResponse (
-        gen(VideoCamera()), 
+        gen(VideoCamera(), request.session), 
         content_type='multipart/x-mixed-replace; boundary=frame'
     )
 

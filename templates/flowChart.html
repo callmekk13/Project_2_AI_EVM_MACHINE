@@ -1,68 +1,37 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title>Process Flow</title>
-    <style type="text/css">
-        .arrow-down {
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-top: 20px solid #00008B;
-            margin-left: 50%;
-        }
-        
-        .btn {
-            margin: 20px;
-            text-align: center;
-            text-decoration: none;
-            pointer-events: none;
-            font-size: 16px;
-            background-color: #D3D3D3;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            border-radius: 6px;
-            width: 100%;
-        }
-        
-        body {
-            background-color: #F5F5DC;
-        }
-        
-        .led-green {
-            background-color: #ABFF00;
-            box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #304701 0 -1px 9px, #89FF00 0 2px 12px;
-        }
-    </style>
-</head>
-
-<body>
-    <div>
-        {% if not request.session.phase_1 %}
-        <button class="btn">Person Detection</button> {% else %}
-        <button class="btn led-green" style="background-color:green !important">Person Detection</button> {% endif %}
-
-        <div class="arrow-down"></div>
-
-        {% if not request.session.phase_2 %}
-        <button class="btn">Mask Detection</button> {% else %}
-        <button class="btn led-green" style="background-color:green !important">Mask Detection</button> {% endif %}
-
-        <div class="arrow-down"></div>
-
-        {% if not request.session.phase_3 %}
-        <button class="btn">Face Recognition</button> {% else %}
-        <button class="btn led-green" style="background-color:green !important">Face Recognition</button> {% endif %}
-
-        <div class="arrow-down"></div>
-
-        {% if not request.session.phase_4 %}
-        <button class="btn">Ready to Vote</button> {% else %}
-        <button class="btn led-green" style="background-color:green !important">Ready to Vote</button> {% endif %}
-
+<div class="timeline">
+    <!-- Step 1: Person Detection -->
+    <div class="timeline-step {% if request.session.phase_1 %}completed{% elif not request.session.phase_1 %}active{% endif %}">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+            <div class="timeline-title">1. Occupancy Verification</div>
+            <div class="timeline-desc">Validates that exactly one voter is present inside the polling booth booth using computer vision.</div>
+        </div>
     </div>
-</body>
 
-</html>
+    <!-- Step 2: Mask Detection -->
+    <div class="timeline-step {% if request.session.phase_2 %}completed{% elif request.session.phase_1 and not request.session.phase_2 %}active{% endif %}">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+            <div class="timeline-title">2. Face Mask Scanner</div>
+            <div class="timeline-desc">Ensures the voter's face is uncovered for identity capture and anti-spoofing checks.</div>
+        </div>
+    </div>
+
+    <!-- Step 3: Face Recognition -->
+    <div class="timeline-step {% if request.session.phase_3 %}completed{% elif request.session.phase_2 and not request.session.phase_3 %}active{% endif %}">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+            <div class="timeline-title">3. Identity Biometrics</div>
+            <div class="timeline-desc">Matches the biometric face structure against registered constituency database records.</div>
+        </div>
+    </div>
+
+    <!-- Step 4: Secure Vote -->
+    <div class="timeline-step {% if request.session.phase_4 %}completed{% elif request.session.phase_3 and not request.session.phase_4 %}active{% endif %}">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+            <div class="timeline-title">4. Secure Ballotcast</div>
+            <div class="timeline-desc">Allows cast of a secret cryptographic vote for the voter's candidate of choice.</div>
+        </div>
+    </div>
+</div>

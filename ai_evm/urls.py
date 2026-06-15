@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .views import api_results, api_status, dbg, reset_session, start
+from .views import api_results, api_status, dbg, reset_session, start, set_sim_state, clear_votes, register_voter, results_page
 from detect_face.views import detect_face
 from detect_person.views import detect_person
 from detect_mask.views import detect_mask
@@ -28,6 +28,10 @@ urlpatterns = [
     path('api/status/', api_status, name='api_status'),
     path('api/results/', api_results, name='api_results'),
     path('reset/', reset_session, name='reset_session'),
+    path('set_sim_state/', set_sim_state, name='set_sim_state'),
+    path('clear_votes/', clear_votes, name='clear_votes'),
+    path('register/', register_voter, name='register_voter'),
+    path('results/', results_page, name='results_page'),
     path('detect_face/', detect_face, name = 'detect_face'),
     path('detect_person/', detect_person, name = 'detect_person'),
     path('detect_mask/', detect_mask, name = 'detect_mask'),

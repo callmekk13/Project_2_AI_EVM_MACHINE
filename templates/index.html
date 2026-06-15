@@ -1,61 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI EVM</title>
+    <title>AI-EVM: Smart Electronic Voting Machine</title>
+    
+    <!-- Link CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- JS Helpers -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 </head>
 
 <body>
-    <!-- <h1>EVM Powerd by AI</h1> -->
+    <!-- Text to Speech Configuration -->
     <script>
         let speech = new SpeechSynthesisUtterance();
         speech.lang = "hi-IN";
-        var voices = window.speechSynthesis.getVoices();
-        speech.voice = voices[9];
+        
+        // Ensure voice list is loaded
+        window.speechSynthesis.onvoiceschanged = function() {
+            var voices = window.speechSynthesis.getVoices();
+            // Try to find a suitable Hindi voice
+            var hiVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN'));
+            speech.voice = hiVoice || voices[0];
+        };
     </script>
 
-    {% if messages %} {% for message in messages %}
+    <!-- Handle Django Messages -->
+    {% if messages %}
+    {% for message in messages %}
     <script>
-        msg = "{{message}}"
+        (function() {
+            let msg = "{{ message }}";
+            let type = "{{ message.tags }}";
+            
+            // Map Django tags to SweetAlert icons
+            let iconType = "info";
+            if (type === "success") iconType = "success";
+            if (type === "warning") iconType = "warning";
+            if (type === "error") iconType = "error";
+            
+            speech.text = msg;
+            speech.volume = 1.0;
+            speech.rate = 1.0;
+            speech.pitch = 1.0;
+            
+            try {
+                window.speechSynthesis.speak(speech);
+            } catch(e) {
+                console.log("Speech synthesis failed", e);
+            }
 
-        speech.text = msg;
-        speech.volume = 1;
-        speech.rate = 1;
-        speech.pitch = 1;
-
-        window.speechSynthesis.speak(speech);
-
-
-        swal({
-            text: "{{ message }}",
-            icon: "{{ message.tags }}",
-            timer: 3000
-        });
+            swal({
+                title: type.toUpperCase(),
+                text: msg,
+                icon: iconType,
+                button: {
+                    text: "Dismiss",
+                    className: "btn-primary"
+                },
+                timer: 4000
+            });
+        })();
     </script>
-    {% endfor %} {% endif %}
+    {% endfor %}
+    {% endif %}
 
-    <table style="width:90%">
-        <tr>
-            <td colspan="2">
-                <div style=" float: left; ">
-                    {% include 'jumbotron.html' %}
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {% include 'webcam.html' %}
-            </td>
-            <td>
+    <!-- Top Navigation Header -->
+    <div class="header-container">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <img class="header-logo" src="{% static 'img/ecp.png' %}" alt="EC Logo">
+            <a href="{% url 'register_voter' %}" class="btn-primary" style="font-size: 14px; text-decoration: none; padding: 8px 16px;">➕ Enroll Voter Face</a>
+            <a href="{% url 'results_page' %}" class="btn-primary" style="font-size: 14px; text-decoration: none; padding: 8px 16px; background: linear-gradient(135deg, var(--accent-purple), #6d28d9); box-shadow: 0 4px 15px rgba(109, 40, 217, 0.3);">📊 Live Results</a>
+        </div>
+        <div class="header-title">
+            <h1>AI-EVM ELECTRONIC VOTING</h1>
+            <p>Next-Gen Secure Verification & Ballot System</p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Body -->
+    <div class="dashboard-grid">
+        <!-- Left: Webcam Camera Panel -->
+        <div class="glass-panel">
+            {% include 'webcam.html' %}
+        </div>
+
+        <!-- Right: Flowchart/Timeline Status -->
+        <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h3 style="margin-bottom: 20px; color: var(--accent-blue);">SYSTEM VERIFICATION FLOW</h3>
                 {% include 'flowChart.html' %}
-            </td>
-        </tr>
-    </table>
+            </div>
+            
+            <!-- Quick Reset Action -->
+            <form action="{% url 'reset_session' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn-reset">🔄 Reset Current Session</button>
+            </form>
+        </div>
+    </div>
 
 </body>
-
 </html>
