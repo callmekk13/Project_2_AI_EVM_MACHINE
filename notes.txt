@@ -1,0 +1,83 @@
+AI-EVM: Smart Electronic Voting Machine - Project Notes
+======================================================
+
+1. OVERVIEW & OBJECTIVES
+------------------------
+AI-EVM is a next-generation Electronic Voting Machine prototype powered by Computer Vision and AI. The main objective is to automate booth occupancy checking, mask removal confirmation, and voter identity verification to eradicate malpractice, reduce polling expenses, and ensure a highly secure, automated ballot collection system.
+
+2. CORE LAYERS & SYSTEM ARCHITECTURE
+------------------------------------
+The project architecture consists of three core components binded together:
+* Presentation Layer: Tech-inspired glassmorphism web UI styled with modern CSS, using SweetAlert custom notifications and browser speech synthesis (text-to-speech) in Hindi to guide voters.
+* Application Layer: Django views managing step-to-step redirection, live MJPEG video feeds, model inference, email triggers, and session management.
+* Intelligence Layer: Custom deep learning and computer vision inference pipelines utilizing MobileNetSSD for occupancy checking, a custom MobileNetV2 CNN for mask status classification, and dlib/face-recognition landmarks for matching face signatures.
+
+3. COGNITIVE VERIFICATION FLOW (4 PHASES)
+----------------------------------------
+The voting process is structured into a 4-phase sequential gate:
+
+- Phase 1: Person Detection (Booth Occupancy)
+  * Model: MobileNetSSD (Caffe framework) trained on COCO dataset.
+  * Logic: Counts humans standing in the camera viewport.
+  * Validation Rule: Exactly ONE person must be detected in the booth.
+    - 0 Persons: Waiting status (EVM locked).
+    - >1 Persons: Blocked status (EVM locked with "Exactly one person must be in the Polling Booth!" alert).
+    - 1 Person: Verified (Unlocks "Verify & Proceed" button to proceed to Phase 2).
+
+- Phase 2: Mask Detection (Face Uncovering)
+  * Model: Custom Keras/TensorFlow model trained with MobileNetV2 architecture.
+  * Logic: Analyzes the facial area for presence of surgical, fabric, or respirator face masks.
+  * Validation Rule: The voter must not be wearing a mask.
+    - Mask Detected: Blocked status (Alerts "Please remove your mask for identity verification!").
+    - No Mask: Verified (Proceeds to Phase 3).
+
+- Phase 3: Face Recognition (Identity Matching)
+  * Model: face_recognition python library leveraging dlib's ResNet-10 deep network with 128-dimensional face land-marking.
+  * Logic: Matches the real-time face encoding with saved voter profile encodings in the local database.
+  * Validation Rule: Face encoding must match a registered voter's database record.
+    - Unregistered / Unknown Face: Blocked status ("Your nomination is not in this constituency!").
+    - Registered Match: Verified (Voter authenticated, proceeds to Phase 4).
+
+- Phase 4: Secure Vote (Ballot casting)
+  * Interface: Digital ballot box rendering rows of available parties (BJP, INC, AAP, BSP, NCP) with their names, tags, and logos.
+  * Validation Rule: Checks if the authenticated voter has already cast a vote.
+    - If already voted: Blocked status (Alerts "Sorry, you have already voted!", flushes session, redirects to start).
+    - If not voted: Accepts selection, saves a new Vote record associated with the voter, launches a background email notification (using Mailjet API) confirming their ballot receipt, and flushes session for the next voter.
+
+4. SYSTEM SANDBOX & SIMULATOR
+-----------------------------
+To support testing on developer machines and headless servers without webcam hardware:
+- The system checks camera availability (`CAMERA_FAILED` flags).
+- If camera initialization fails, it falls back to a custom simulation feed (`ai_evm/simulator.py`).
+- The simulator draws an animated retro-futuristic cyan HUD with corners, scanning lines, live timestamps, and bounding boxes over a canvas.
+- A "Webcam Simulation Controls" widget is displayed on the dashboard:
+  * Controls booth occupancy (0, 1, or 2 people).
+  * Controls mask state (Wearing mask vs. No mask).
+  * Selects a registered voter name to mock identification (e.g. Satyendra, Mohith, Pooja) or simulates an "Unknown" person.
+- A "Clear Vote Database" action allows administrators to wipe cast ballots to reuse registered names for multiple tests.
+
+5. VOTER REGISTRATION & BIOMETRIC ENROLLMENT
+---------------------------------------------
+- Located at `/register/` page ("Enroll Voter Face").
+- Requires standard details (EPIC, Aadhar, Name, DOB, Email) along with a face capture.
+- Features dual input: capturing snapshots live from the browser webcam or uploading an image file.
+- The backend automatically extracts facial landmarks using dlib, registers the voter in SQLite, appends the new face encoding to the serialized pickle file (`models/recognize_face_models/dataset_faces.dat`), and saves a profile image under `static/img/voters/`.
+
+6. ENVIRONMENT CONFIGURATION & SETUP
+------------------------------------
+- Conda virtual environment (Python 3.6 recommended) is preferred due to legacy dependencies (dlib, older TensorFlow):
+  ```bash
+  conda create --name AI_EVM_env python=3.6
+  conda activate AI_EVM_env
+  pip install -r requirements.txt
+  python manage.py makemigrations
+  python manage.py migrate
+  python manage.py createsuperuser
+  python manage.py runserver 0.0.0.0:5000
+  ```
+- Deployment configuration adjustments:
+  * Store SECRET_KEY, MAILJET_API_KEY, and MAILJET_API_SECRET in the system environment and read them dynamically.
+  * Set `DEBUG = False`.
+  * Define `ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'your-domain.com']`.
+  * Deploy presentation and application layers together on a local terminal machine for lag-free video stream analysis.
+  * Run with WSGI server `gunicorn` bound to Nginx reverse proxy.

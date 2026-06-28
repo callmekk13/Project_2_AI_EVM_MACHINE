@@ -1,0 +1,73 @@
+AI_EVM Project Directory Structure
+==================================
+
+AI_EVM/
+│
+├── README.md               - Project setup guide, requirements, and deployment instructions.
+├── manage.py               - Django project management utility script.
+├── requirements.txt        - Python package dependencies.
+├── db.sqlite3              - SQLite Database storing registered voters, parties, and vote tallies.
+├── structure.txt           - This file, documenting the file structure.
+├── notes.txt               - Project summary, phase logic, and implementation details.
+├── snapshots.md            - Step-by-step walk-through referencing captured screenshot PNGs.
+│
+├── snapshots/              - Directory containing generated step-by-step PNG screenshots.
+│   ├── step_1_person_detection.png
+│   ├── step_2_mask_detection.png
+│   ├── step_3_face_recognition.png
+│   ├── step_4_ballot_box.png
+│   ├── step_5_vote_success.png
+│   ├── step_6_live_results.png
+│   └── step_7_voter_registration.png
+│
+├── ai_evm/                 - Main Django app containing core views, models, and simulator logic.
+│   ├── admin.py            - Registers models for the admin panel.
+│   ├── asgi.py
+│   ├── models.py           - Voter, Party, and Vote Django models.
+│   ├── settings.py         - Django project configurations and environment logic.
+│   ├── simulator.py        - Visual simulation fallback for webcam streams.
+│   ├── urls.py             - Main routing and page endpoints.
+│   ├── views.py            - View controllers handling the 4-phase voting logic and registration.
+│   └── wsgi.py
+│
+├── detect_person/          - Phase 1: Person detection (checks for booth occupancy).
+│   ├── camera.py           - MobileNetSSD model logic to count individuals in the frame.
+│   ├── views.py            - Streams the video feed using VideoCamera.
+│   └── (Django files)
+│
+├── detect_mask/            - Phase 2: Mask detection (ensures voter's face is uncovered).
+│   ├── camera.py           - MobileNetSSD + custom Keras model logic to check for a face mask.
+│   ├── views.py            - Streams the video feed with bounding boxes.
+│   └── (Django files)
+│
+├── recognize_face/         - Phase 3: Face recognition (voter identification).
+│   ├── camera.py           - face_recognition / dlib landmark face match logic.
+│   ├── views.py            - Streams the recognized identity overlay.
+│   └── (Django files)
+│
+├── detect_face/            - Support app for frontal face detection.
+│   ├── camera.py           - OpenCV Haar cascade logic for frontal face boxes.
+│   └── (Django files)
+│
+├── models/                 - Pre-trained models, weights, and training notebooks.
+│   ├── MobileNetSSD/       - Deployment weights/prototxt for person detection.
+│   ├── face_detector/      - Caffe model and custom mask detector weights.
+│   ├── opencv_haarcascade_data/ - Haar Cascade XML for face detection.
+│   ├── recognize_face_models/   - Pickled voter face encodings and registered names database.
+│   └── src/                - Original Jupyter training notebooks and Python source scripts.
+│
+├── templates/              - HTML UI Templates.
+│   ├── index.html          - Main dashboard.
+│   ├── webcam.html         - Live stream frame & simulation controls widget.
+│   ├── flowChart.html      - Sidebar showing progress through the 4 phases.
+│   ├── register.html       - Voter registration with webcam capture.
+│   ├── results.html        - Real-time vote counts and stats page.
+│   └── vote.html           - Ballot sheet showing political party options.
+│
+└── static/                 - Static asset files.
+    ├── css/
+    │   └── style.css       - Core styling for the dashboard, colors, buttons.
+    └── img/
+        ├── voters/         - Registered voters' reference profile pictures.
+        ├── *.png/jpg       - Party logos, EC emblem, and architecture diagram.
+        └── after_vote.jpg  - Image shown after a successful vote.
